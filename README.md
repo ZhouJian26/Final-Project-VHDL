@@ -1,1 +1,1 @@
-# Progetto-Finale-Reti
+# Progetto Finale di Reti Logiche
