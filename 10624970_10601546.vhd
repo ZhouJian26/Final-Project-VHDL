@@ -22,16 +22,16 @@ END project_reti_logiche;
 
 ARCHITECTURE Behavioral OF project_reti_logiche IS
 
-    SIGNAL state, next_state : state_type;
-    SIGNAL is_data_loaded, next_is_data_loaded, load_data, next_load_data, next_is_load_target, next_load_target : BOOLEAN := false;
-    SIGNAL address_ram, next_address_ram := std_logic_vector(15 DOWNTO 0) := "1111111111111111";
-    SIGNAL reset, start, next_en, next_we := std_logic := '0';
-    SIGNAL data, next_target_addr, target_addr, wz_0, next_wz_0, wz_2, next_wz_2, wz_3, next_wz_3, wz_4, next_wz_4, wz_5, next_wz_5, wz_6, next_wz_6, wz_7, next_wz_7 : std_logic_vector(7 DOWNTO 0) := "00000000";
+    SIGNAL is_data_loaded, next_is_data_loaded, load_data, next_load_data, next_is_load_target, is_load_target, load_target, is_load_data, next_load_target : BOOLEAN := false;
+    SIGNAL address_ram, next_address_ram : std_logic_vector(15 DOWNTO 0) := "1111111111111111";
+    SIGNAL reset, start, next_en, next_we, next_done, is_done : std_logic := '0';
+    SIGNAL data, next_target_addr, target_addr, next_data, o_output, wz_0, next_wz_0, wz_1, next_wz_1, wz_2, next_wz_2, wz_3, next_wz_3, wz_4, next_wz_4, wz_5, next_wz_5, wz_6, next_wz_6, wz_7, next_wz_7 : std_logic_vector(7 DOWNTO 0) := "00000000";
 
 BEGIN
 
     -- Resetta | DONE
     PROCESS (reset)
+    BEGIN
         IF (reset = '1') THEN
             next_is_data_loaded <= false; -- invalida i valori attuali
         END IF;
@@ -39,15 +39,13 @@ BEGIN
 
     -- Campionatore | IN PROGRESS
     PROCESS (i_clk)
+    BEGIN
         IF (i_clk'event AND i_clk = '1')
             -- OUTPUT
             o_done <= next_done;
             o_en <= next_en;
             o_we <= next_we;
-
-            o_data <= next_data;
-
-            o_output <= next_output;
+            o_data <= next_output;
 
             o_address <= next_address_ram;
 
@@ -64,8 +62,7 @@ BEGIN
             load_target <= next_load_target;
             is_load_data <= next_is_load_data;
             address_ram <= next_address_ram;
-            state <= next_state;
-            curr_output <= next_output;
+            --curr_output <= next_output;
             is_done <= next_is_done;
 
             wz_0 <= next_wz_0;
@@ -83,6 +80,7 @@ BEGIN
 
     -- Starter | DONE
     PROCESS (start)
+    BEGIN
         IF (start = '1')
             next_is_load_target <= false;
             next_en <= '1';
@@ -102,6 +100,7 @@ BEGIN
 
     -- Lettura Dati | DONE
     PROCESS (address_ram, load_data) -- gestire tempo
+    BEGIN
         IF (load_data)
 
             next_load_data <= load_data; -- se problema assegna in when case ******
@@ -140,6 +139,7 @@ BEGIN
 
     -- Lettura solo target address | DONE
     PROCESS (address_ram, load_target)
+    BEGIN
         IF (load_target)
 
             next_load_target <= load_target; -- se problema assegna in when case ******
@@ -161,6 +161,7 @@ BEGIN
 
     -- Valutazione WZ0 | DONE
     PROCESS (is_load_target)
+    BEGIN
         next_en <= '0'; -- forse errore
         next_we <= '0';
         IF (is_load_target)
