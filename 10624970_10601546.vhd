@@ -22,49 +22,30 @@ END project_reti_logiche;
 
 ARCHITECTURE Behavioral OF project_reti_logiche IS
 
-    SIGNAL is_data_loaded, next_is_data_loaded, load_data, next_load_data, next_is_load_target, is_load_target, load_target, is_load_data, next_load_target : BOOLEAN := false;
-    SIGNAL address_ram, next_address_ram : std_logic_vector(15 DOWNTO 0) := "1111111111111111";
-    SIGNAL reset, start, next_en, next_we, next_done, is_done : std_logic := '0';
-    SIGNAL data, next_target_addr, target_addr, next_data, o_output, wz_0, next_wz_0, wz_1, next_wz_1, wz_2, next_wz_2, wz_3, next_wz_3, wz_4, next_wz_4, wz_5, next_wz_5, wz_6, next_wz_6, wz_7, next_wz_7 : std_logic_vector(7 DOWNTO 0) := "00000000";
+    SIGNAL is_data_loaded, next_is_data_loaded, load_data, next_load_data, is_load_target, next_is_load_target, load_target, next_load_target : std_logic := '0';
+    SIGNAL curr_address_ram, next_address_ram : std_logic_vector(15 DOWNTO 0) := "0000000000000000";
+    SIGNAL reset, start, next_en, next_we, curr_we, curr_en, next_done, curr_done : std_logic := '0';
+    SIGNAL data, target_addr, next_target_addr, next_data, next_output, wz_0, next_wz_0, wz_1, next_wz_1, wz_2, next_wz_2, wz_3, next_wz_3, wz_4, next_wz_4, wz_5, next_wz_5, wz_6, next_wz_6, wz_7, next_wz_7 : std_logic_vector(7 DOWNTO 0) := "00000000";
 
 BEGIN
-
-    -- Resetta | DONE
-    PROCESS (reset)
-    BEGIN
-        IF (reset = '1') THEN
-            next_is_data_loaded <= false; -- invalida i valori attuali
-        END IF;
-    END PROCESS;
-
-    -- Campionatore | IN PROGRESS
     PROCESS (i_clk)
     BEGIN
-        IF (i_clk'event AND i_clk = '1')
-            -- OUTPUT
-            o_done <= next_done;
-            o_en <= next_en;
-            o_we <= next_we;
-            o_data <= next_output;
-
-            o_address <= next_address_ram;
-
-            -- INPUT
+        IF (i_clk'event AND i_clk = '0') THEN
             reset <= i_rst;
             start <= i_start;
-
-            data <= i_data;
-
-            -- STATE
             is_data_loaded <= next_is_data_loaded;
-            is_load_target <= next_is_load_target;
+            curr_en <= next_en;
+            data <= i_data;
+            curr_address_ram <= next_address_ram;
             load_data <= next_load_data;
             load_target <= next_load_target;
-            is_load_data <= next_is_load_data;
-            address_ram <= next_address_ram;
-            --curr_output <= next_output;
-            is_done <= next_is_done;
+            curr_done <= next_done;
+        END IF;
 
+    END PROCESS;
+    PROCESS (i_clk)
+    BEGIN
+        IF (i_clk'event AND i_clk = '1') THEN
             wz_0 <= next_wz_0;
             wz_1 <= next_wz_1;
             wz_2 <= next_wz_2;
@@ -73,204 +54,158 @@ BEGIN
             wz_5 <= next_wz_5;
             wz_6 <= next_wz_6;
             wz_7 <= next_wz_7;
-
-            target_addr <= next_target_addr;
         END IF;
     END PROCESS;
-
-    -- Starter | DONE
-    PROCESS (start)
+    PROCESS (reset, is_data_loaded, start, curr_address_ram, data, load_data, load_target, load_data, curr_done, wz_0, wz_1, wz_2, wz_3, wz_4, wz_5, wz_6, wz_7, curr_en)
     BEGIN
-        IF (start = '1')
-            next_is_load_target <= false;
-            next_en <= '1';
-            next_we <= '0';
-            IF (NOT(is_data_loaded))
-                next_load_data <= true;
+        o_en <= curr_en;
+        o_done <= curr_done;
+        next_done <= curr_done;
+        next_en <= curr_en;
+        o_we <= '0';
+        o_address <= curr_address_ram;
+        o_data <= "00000000";
+        next_address_ram <= curr_address_ram;
+
+        next_load_data <= load_data;
+        next_is_data_loaded <= is_data_loaded;
+        next_load_target <= '0';
+        next_wz_0 <= wz_0;
+        next_wz_1 <= wz_1;
+        next_wz_2 <= wz_2;
+        next_wz_3 <= wz_3;
+        next_wz_4 <= wz_4;
+        next_wz_5 <= wz_5;
+        next_wz_6 <= wz_6;
+        next_wz_7 <= wz_7;
+        -- RESET STATE --
+        IF (reset = '1') THEN
+            next_is_data_loaded <= '0';
+            IF (start = '1') THEN
+                next_load_data <= '1';
                 next_address_ram <= "0000000000000000";
-            ELSE
-                next_load_target <= true;
-                next_address_ram <= "000000000001000";
-                --altrimenti carica solo il target address
-            END IF;
-        ELSE
-            next_is_done <= false;
-        END IF;
-    END PROCESS;
-
-    -- Lettura Dati | DONE
-    PROCESS (address_ram, load_data) -- gestire tempo
-    BEGIN
-        IF (load_data)
-
-            next_load_data <= load_data; -- se problema assegna in when case ******
-            next_address_ram <= address_ram + "0000000000000001"; -- auto increment se problema assegna in when case ******
-            next_en <= '1';
-            next_we <= '0';
-
-            CASE address_ram - "0000000000000001" IS
-                WHEN "000000000000000" =>
-                    next_wz_0 <= data;
-                WHEN "000000000000001" =>
-                    next_wz_1 <= data;
-                WHEN "000000000000010" =>
-                    next_wz_2 <= data;
-                WHEN "000000000000011" =>
-                    next_wz_3 <= data;
-                WHEN "000000000000100" =>
-                    next_wz_4 <= data;
-                WHEN "000000000000101" =>
-                    next_wz_5 <= data;
-                WHEN "000000000000110" =>
-                    next_wz_6 <= data;
-                WHEN "000000000000111" =>
-                    next_wz_7 <= data;
-                WHEN "000000000001000" =>
-                    -- fine lettura
-                    next_target_addr <= data;
-                    next_load_data <= false;
-                    next_is_load_data <= true;
-                    next_is_load_target <= true;
-                WHEN OTHERS => NULL;
-
-            END CASE;
-        END IF;
-    END PROCESS;
-
-    -- Lettura solo target address | DONE
-    PROCESS (address_ram, load_target)
-    BEGIN
-        IF (load_target)
-
-            next_load_target <= load_target; -- se problema assegna in when case ******
-            next_address_ram <= address_ram + "0000000000000001"; -- auto increment se problema assegna in when case ******
-            next_en <= '1';
-            next_we <= '0';
-
-            CASE address_ram IS
-                WHEN "000000000001001" =>
-                    -- fine lettura
-                    next_target_addr <= data;
-                    next_load_target <= false;
-                    next_is_load_target <= true;
-                WHEN OTHERS => NULL;
-
-            END CASE;
-        END IF;
-    END PROCESS;
-
-    -- Valutazione WZ0 | DONE
-    PROCESS (is_load_target)
-    BEGIN
-        next_en <= '0'; -- forse errore
-        next_we <= '0';
-        IF (is_load_target)
-
-            next_is_done <= true;
-            is_load_target <= false;
-            next_en <= '1';
-            next_we <= '1';
-            next_address_ram = "000000000001001";
-
-            IF (wz_0 <= target_addr)
-                CASE target_addr - wz_0 IS
-                    WHEN "0000000000000000" =>
-                        next_output <= "10000001";
-                    WHEN "0000000000000001" =>
-                        next_output <= "10000010";
-                    WHEN "0000000000000010" =>
-                        next_output <= "10000100";
-                    WHEN "0000000000000011" =>
-                        next_output <= "10001000";
-                    WHEN OTHERS => NULL;
-                END CASE;
-            ELSIF (wz_1 <= target_addr)
-                CASE target_addr - wz_1 IS
-                    WHEN "0000000000000000" =>
-                        next_output <= "10010001";
-                    WHEN "0000000000000001" =>
-                        next_output <= "10010010";
-                    WHEN "0000000000000010" =>
-                        next_output <= "10010100";
-                    WHEN "0000000000000011" =>
-                        next_output <= "10011000";
-                    WHEN OTHERS => NULL;
-                END CASE;
-            ELSIF (wz_2 <= target_addr)
-                CASE target_addr - wz_2 IS
-                    WHEN "0000000000000000" =>
-                        next_output <= "10100001";
-                    WHEN "0000000000000001" =>
-                        next_output <= "10100010";
-                    WHEN "0000000000000010" =>
-                        next_output <= "10100100";
-                    WHEN "0000000000000011" =>
-                        next_output <= "10101000";
-                    WHEN OTHERS => NULL;
-                END CASE;
-            ELSIF (wz_3 <= target_addr)
-                CASE target_addr - wz_3 IS
-                    WHEN "0000000000000000" =>
-                        next_output <= "10110001";
-                    WHEN "0000000000000001" =>
-                        next_output <= "10110010";
-                    WHEN "0000000000000010" =>
-                        next_output <= "10110100";
-                    WHEN "0000000000000011" =>
-                        next_output <= "10111000";
-                    WHEN OTHERS => NULL;
-                END CASE;
-            ELSIF (wz_4 <= target_addr)
-                CASE target_addr - wz_4 IS
-                    WHEN "0000000000000000" =>
-                        next_output <= "11000001";
-                    WHEN "0000000000000001" =>
-                        next_output <= "11000010";
-                    WHEN "0000000000000010" =>
-                        next_output <= "11000100";
-                    WHEN "0000000000000011" =>
-                        next_output <= "11001000";
-                    WHEN OTHERS => NULL;
-                END CASE;
-            ELSIF (wz_5 <= target_addr)
-                CASE target_addr - wz_5 IS
-                    WHEN "0000000000000000" =>
-                        next_output <= "11010001";
-                    WHEN "0000000000000001" =>
-                        next_output <= "11010010";
-                    WHEN "0000000000000010" =>
-                        next_output <= "11010100";
-                    WHEN "0000000000000011" =>
-                        next_output <= "11011000";
-                    WHEN OTHERS => NULL;
-                END CASE;
-            ELSIF (wz_6 <= target_addr)
-                CASE target_addr - wz_6 IS
-                    WHEN "0000000000000000" =>
-                        next_output <= "11100001";
-                    WHEN "0000000000000001" =>
-                        next_output <= "11100010";
-                    WHEN "0000000000000010" =>
-                        next_output <= "11100100";
-                    WHEN "0000000000000011" =>
-                        next_output <= "11101000";
-                    WHEN OTHERS => NULL;
-                END CASE;
-            ELSIF (wz_7 <= target_addr)
-                CASE target_addr - wz_7 IS
-                    WHEN "0000000000000000" =>
-                        next_output <= "11110001";
-                    WHEN "0000000000000001" =>
-                        next_output <= "11110010";
-                    WHEN "0000000000000010" =>
-                        next_output <= "11110100";
-                    WHEN "0000000000000011" =>
-                        next_output <= "11111000";
-                    WHEN OTHERS => NULL;
-                END CASE;
-            ELSE
-                next_output <= 0 & target_addr;
+                o_address <= "0000000000000000";
+                next_load_target <= '0';
             END IF;
         END IF;
+
+        -- START --
+        IF (start = '1' AND load_data = '0' AND load_target = '0' AND curr_done = '0' AND reset = '0') THEN
+            o_en <= '1';
+            next_en <= '1';
+            IF (is_data_loaded = '0') THEN
+                next_load_data <= '1';
+                next_address_ram <= "0000000000000000";
+                o_address <= "0000000000000000";
+            ELSE
+                next_load_target <= '1';
+                o_address <= "0000000000001000";
+            END IF;
+        ELSIF (start = '0' AND curr_done = '1') THEN
+            o_done <= '0';
+            next_done <= '0';
+        END IF;
+
+        IF (load_data = '1' AND reset = '0') THEN
+            next_address_ram <= std_logic_vector(to_unsigned(conv_integer(curr_address_ram) + 1, 16));
+            o_address <= std_logic_vector(to_unsigned(conv_integer(curr_address_ram) + 1, 16));
+            CASE curr_address_ram IS
+                WHEN "0000000000000000" => next_wz_0 <= data;
+                WHEN "0000000000000001" => next_wz_1 <= data;
+                WHEN "0000000000000010" => next_wz_2 <= data;
+                WHEN "0000000000000011" => next_wz_3 <= data;
+                WHEN "0000000000000100" => next_wz_4 <= data;
+                WHEN "0000000000000101" => next_wz_5 <= data;
+                WHEN "0000000000000110" => next_wz_6 <= data;
+                WHEN "0000000000000111" => next_wz_7 <= data;
+                    next_is_data_loaded <= '1';
+                    next_load_data <= '0';
+                    next_load_target <= '1';
+                WHEN OTHERS => NULL;
+            END CASE;
+        END IF;
+
+        IF (load_target = '1' AND reset = '0') THEN
+            o_address <= "0000000000001001";
+            next_address_ram <= "0000000000000000";
+            o_we <= '1';
+            -- o_done <= '1';
+            next_done <= '1';
+            next_en <= '0';
+            o_data <= "01111111" AND data;
+            IF (wz_0 <= data AND (conv_integer(data) - conv_integer(wz_0) < 4)) THEN
+                CASE conv_integer(data) - conv_integer(wz_0) IS
+                    WHEN 0 => o_data <= "10000001";
+                    WHEN 1 => o_data <= "10000010";
+                    WHEN 2 => o_data <= "10000100";
+                    WHEN 3 => o_data <= "10001000";
+                    WHEN OTHERS => NULL;
+                END CASE;
+            END IF;
+            IF (wz_1 <= data AND (conv_integer(data) - conv_integer(wz_1) < 4)) THEN
+                CASE conv_integer(data) - conv_integer(wz_1) IS
+                    WHEN 0 => o_data <= "10010001";
+                    WHEN 1 => o_data <= "10010010";
+                    WHEN 2 => o_data <= "10010100";
+                    WHEN 3 => o_data <= "10011000";
+                    WHEN OTHERS => NULL;
+                END CASE;
+            END IF;
+            IF (wz_2 <= data AND (conv_integer(data) - conv_integer(wz_2) < 4)) THEN
+                CASE conv_integer(data) - conv_integer(wz_2) IS
+                    WHEN 0 => o_data <= "10100001";
+                    WHEN 1 => o_data <= "10100010";
+                    WHEN 2 => o_data <= "10100100";
+                    WHEN 3 => o_data <= "10101000";
+                    WHEN OTHERS => NULL;
+                END CASE;
+            END IF;
+            IF (wz_3 <= data AND (conv_integer(data) - conv_integer(wz_3) < 4)) THEN
+                CASE conv_integer(data) - conv_integer(wz_3) IS
+                    WHEN 0 => o_data <= "10110001";
+                    WHEN 1 => o_data <= "10110010";
+                    WHEN 2 => o_data <= "10110100";
+                    WHEN 3 => o_data <= "10111000";
+                    WHEN OTHERS => NULL;
+                END CASE;
+            END IF;
+            IF (wz_4 <= data AND (conv_integer(data) - conv_integer(wz_4) < 4)) THEN
+                CASE conv_integer(data) - conv_integer(wz_4) IS
+                    WHEN 0 => o_data <= "11000001";
+                    WHEN 1 => o_data <= "11000010";
+                    WHEN 2 => o_data <= "11000100";
+                    WHEN 3 => o_data <= "11001000";
+                    WHEN OTHERS => NULL;
+                END CASE;
+            END IF;
+            IF (wz_5 <= data AND (conv_integer(data) - conv_integer(wz_5) < 4)) THEN
+                CASE conv_integer(data) - conv_integer(wz_5) IS
+                    WHEN 0 => o_data <= "11010001";
+                    WHEN 1 => o_data <= "11010010";
+                    WHEN 2 => o_data <= "11010100";
+                    WHEN 3 => o_data <= "11011000";
+                    WHEN OTHERS => NULL;
+                END CASE;
+            END IF;
+            IF (wz_6 <= data AND (conv_integer(data) - conv_integer(wz_6) < 4)) THEN
+                CASE conv_integer(data) - conv_integer(wz_6) IS
+                    WHEN 0 => o_data <= "11100001";
+                    WHEN 1 => o_data <= "11100010";
+                    WHEN 2 => o_data <= "11100100";
+                    WHEN 3 => o_data <= "11101000";
+                    WHEN OTHERS => NULL;
+                END CASE;
+            END IF;
+            IF (wz_7 <= data AND (conv_integer(data) - conv_integer(wz_7) < 4)) THEN
+                CASE conv_integer(data) - conv_integer(wz_7) IS
+                    WHEN 0 => o_data <= "11110001";
+                    WHEN 1 => o_data <= "11110010";
+                    WHEN 2 => o_data <= "11110100";
+                    WHEN 3 => o_data <= "11111000";
+                    WHEN OTHERS => NULL;
+                END CASE;
+            END IF;
+        END IF;
+
     END PROCESS;
-END Behavioral;
+END behavioral;
