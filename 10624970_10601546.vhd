@@ -113,7 +113,7 @@ BEGIN
                     o_address <= std_logic_vector(to_unsigned(conv_integer(curr_address_ram) + 1, 16));
                     ram_0(conv_integer(curr_address_ram))<=conv_integer(data);
                     
-                    if(conv_integer(curr_address_ram)=7) then
+                    if(curr_address_ram="0000000000000111") then
                             next_is_data_loaded <= '1';
                             next_state<=STATE_WRITE;
                     end if;
