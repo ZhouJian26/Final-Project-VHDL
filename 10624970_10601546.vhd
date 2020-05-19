@@ -67,7 +67,7 @@ BEGIN
     
     
     
-    PROCESS (reset, is_data_loaded, start, curr_address_ram, data, curr_done, curr_en,current_state)
+    PROCESS (reset, is_data_loaded, start, curr_address_ram, data, curr_done, curr_en,current_state,ram_0)
     variable target: integer:=0;
     BEGIN
         next_state<= STATE_START;
@@ -212,7 +212,7 @@ BEGIN
                                 WHEN 0 => o_data <= "11010001";
                                 WHEN 1 => o_data <= "11010010";
                                 WHEN 2 => o_data <= "11010100";
-                                WHEN 3 => o_data <= "00000000";
+                                WHEN 3 => o_data <= "11011000";
                                 WHEN OTHERS => NULL;
                             END CASE;
                         
