@@ -1,12 +1,13 @@
+
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
 USE ieee.std_logic_unsigned.ALL;
 
-ENTITY project_tb IS
-END project_tb;
+ENTITY project_tb_2_start_reset IS
+END project_tb_2_start_reset;
 
-ARCHITECTURE projecttb OF project_tb IS
+ARCHITECTURE projecttb OF project_tb_2_start_reset IS
     CONSTANT c_CLOCK_PERIOD : TIME := 100 ns;
     SIGNAL tb_done : std_logic;
     SIGNAL mem_address : std_logic_vector (15 DOWNTO 0) := (OTHERS => '0');
@@ -28,7 +29,7 @@ ARCHITECTURE projecttb OF project_tb IS
     5 => std_logic_vector(to_unsigned(45, 8)),
     6 => std_logic_vector(to_unsigned(77, 8)),
     7 => std_logic_vector(to_unsigned(91, 8)),
-    8 => std_logic_vector(to_unsigned(42, 8)),
+    8 => std_logic_vector(to_unsigned(4, 8)),
     OTHERS => (OTHERS => '0'));
 
     COMPONENT project_reti_logiche IS
@@ -90,11 +91,25 @@ BEGIN
         WAIT FOR c_CLOCK_PERIOD;
         tb_start <= '0';
         WAIT UNTIL tb_done = '0';
+        WAIT FOR 100 ns;
 
-        -- Maschera di output = 0 - 42
-        ASSERT RAM(9) = std_logic_vector(to_unsigned(42, 8)) REPORT "TEST FALLITO. Expected  42  found " & INTEGER'image(to_integer(unsigned(RAM(19)))) SEVERITY failure;
+        ASSERT RAM(9) = "10000001" REPORT "TEST FALLITO." & INTEGER'image(to_integer(unsigned(RAM(19)))) SEVERITY failure;
+        ASSERT false REPORT "Simulation Ended!, TEST PASSATO" SEVERITY failure;
 
-        --ASSERT false REPORT "Simulation Ended!, TEST PASSATO" SEVERITY failure;
+        tb_rst <= '1';
+        WAIT FOR c_CLOCK_PERIOD;
+        tb_rst <= '0';
+        WAIT FOR c_CLOCK_PERIOD;
+        tb_start <= '1';
+        WAIT FOR c_CLOCK_PERIOD;
+        WAIT UNTIL tb_done = '1';
+        WAIT FOR c_CLOCK_PERIOD;
+        tb_start <= '0';
+        WAIT UNTIL tb_done = '0';
+        WAIT FOR 100 ns;
+        ASSERT RAM(9) = "10000001" REPORT "TEST FALLITO." & INTEGER'image(to_integer(unsigned(RAM(19)))) SEVERITY failure;
+
+        ASSERT false REPORT "Simulation Ended!, TEST PASSATO" SEVERITY failure;
     END PROCESS test;
 
 END projecttb;
