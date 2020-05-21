@@ -22,16 +22,16 @@ END project_reti_logiche;
 
 ARCHITECTURE Behavioral OF project_reti_logiche IS
 
-    TYPE state_type IS (STATE_START, STATE_LOAD, STATE_WRITE);
-    SIGNAL current_state, next_state : state_type;
+    TYPE state_type IS (WAITING_FOR_START ,STATE_START, STATE_LOAD, STATE_WRITE, STATE_DONE);
+    SIGNAL current_state, next_state : state_type :=WAITING_FOR_START;
 
     TYPE ram IS ARRAY(0 TO 7) OF INTEGER RANGE 0 TO 255;
-    SIGNAL ram_0, next_ram_0 : ram;
+    SIGNAL ram_0, next_ram_0 : ram:= (others=>0);
 
     SIGNAL is_data_loaded, next_is_data_loaded : std_logic := '0';
     SIGNAL curr_address_ram, next_address_ram : INTEGER := 0;
     SIGNAL reset, start, next_en, next_we, curr_we, curr_en, next_done, curr_done : std_logic := '0';
-    SIGNAL data, target_addr, next_target_addr, next_data, next_output : std_logic_vector(7 DOWNTO 0) := "00000000";
+    SIGNAL data, target_addr, next_target_addr, next_data, next_output: std_logic_vector(7 DOWNTO 0) := "00000000";
 
 BEGIN
     PROCESS (i_clk)
@@ -43,7 +43,6 @@ BEGIN
             curr_en <= next_en;
             data <= i_data;
             curr_address_ram <= next_address_ram;
-
             curr_done <= next_done;
             current_state <= next_state;
         END IF;
@@ -66,14 +65,14 @@ BEGIN
     PROCESS (reset, is_data_loaded, start, curr_address_ram, data, curr_done, curr_en, current_state, ram_0)
         VARIABLE target : INTEGER := 0;
     BEGIN
-        next_state <= STATE_START;
         o_en <= curr_en;
         o_done <= curr_done;
         next_done <= curr_done;
         next_en <= curr_en;
+        next_state<=current_state;
         o_we <= '0';
         o_address <= std_logic_vector(to_unsigned(curr_address_ram, 16));
-        o_data <= "00000000";
+        o_data<="00000000";
         next_address_ram <= curr_address_ram;
 
         target := conv_integer(data);
@@ -87,39 +86,41 @@ BEGIN
         next_ram_0(5) <= ram_0(5);
         next_ram_0(6) <= ram_0(6);
         next_ram_0(7) <= ram_0(7);
+        
 
         -- RESET STATE --
+        
+        IF (reset = '1') THEN
+            next_state <= STATE_START;
+            next_is_data_loaded <= '0';
+            next_en<='0';
+            IF (start = '1') THEN--forse meglio togliere
+                next_state <= STATE_LOAD;
+                o_en <= '1';
+                next_en <= '1';
+                next_address_ram <= 0;
+                o_address <= "0000000000000000";
+             END IF;
+        END IF;
+        
         -- START --
         CASE current_state IS
+            WHEN WAITING_FOR_START =>
+               
+                
             WHEN STATE_START =>
-
-                IF (reset = '1') THEN
-                    next_state <= STATE_START;
-                    next_is_data_loaded <= '0';
-                    IF (start = '1') THEN
-                        next_state <= STATE_LOAD;
-
-                        next_address_ram <= 0;
-                        o_address <= "0000000000000000";
-
-                    END IF;
-                ELSIF (start = '1' AND curr_done = '0') THEN
+   
+                IF (start = '1') THEN
                     o_en <= '1';
                     next_en <= '1';
-
                     IF (is_data_loaded = '0') THEN
                         next_state <= STATE_LOAD;
-
                         next_address_ram <= 0;
                         o_address <= "0000000000000000";
                     ELSE
                         next_state <= STATE_WRITE;
-
                         o_address <= "0000000000001000";
                     END IF;
-                ELSIF (start = '0' AND curr_done = '1') THEN
-                    o_done <= '0';
-                    next_done <= '0';
                 END IF;
 
             WHEN STATE_LOAD =>
@@ -133,21 +134,11 @@ BEGIN
                         next_is_data_loaded <= '1';
                         next_state <= STATE_WRITE;
                     END IF;
-                ELSE
-                    next_state <= STATE_START;
-                    next_is_data_loaded <= '0';
-                    IF (start = '1') THEN
-                        next_state <= STATE_LOAD;
-
-                        next_address_ram <= 0;
-                        o_address <= "0000000000000000";
-
-                    END IF;
                 END IF;
 
             WHEN STATE_WRITE =>
                 IF (reset = '0') THEN
-                    next_state <= STATE_START;
+                    next_state <= STATE_DONE;
                     o_address <= "0000000000001001";
                     next_address_ram <= 0;
                     o_we <= '1';
@@ -155,7 +146,6 @@ BEGIN
                     next_done <= '1';
                     next_en <= '0';
                     o_data <= "01111111" AND data;
-
                     IF (ram_0(0) <= target AND (target - ram_0(0) < 4)) THEN
                         CASE target - ram_0(0) IS
                             WHEN 0 => o_data <= "10000001";
@@ -227,19 +217,17 @@ BEGIN
                             WHEN 3 => o_data <= "11111000";
                             WHEN OTHERS => NULL;
                         END CASE;
-
-                    END IF;
-                ELSE
-                    next_state <= STATE_START;
-                    next_is_data_loaded <= '0';
-                    IF (start = '1') THEN
-                        next_state <= STATE_LOAD;
-
-                        next_address_ram <= 0;
-                        o_address <= "0000000000000000";
-
                     END IF;
                 END IF;
+                
+            WHEN STATE_DONE =>
+                IF (start = '0') THEN
+                    o_done <= '0';
+                    next_done <= '0';
+                    next_en<='0';
+                    next_state<= STATE_START;
+                END IF;
+                
         END CASE;
     END PROCESS;
 END behavioral;
