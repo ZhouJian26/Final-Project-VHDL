@@ -94,7 +94,6 @@ BEGIN
         WAIT FOR 100 ns;
 
         ASSERT RAM(9) = "10000001" REPORT "TEST FALLITO." & INTEGER'image(to_integer(unsigned(RAM(19)))) SEVERITY failure;
-        ASSERT false REPORT "Simulation Ended!, TEST PASSATO" SEVERITY failure;
 
         tb_rst <= '1';
         WAIT FOR c_CLOCK_PERIOD;
