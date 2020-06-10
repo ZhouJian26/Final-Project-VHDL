@@ -100,13 +100,13 @@ BEGIN
             next_state <= STATE_START;
             next_is_data_loaded <= '0';
             next_en <= '0';
-            IF (start = '1') THEN--forse meglio togliere
-                next_state <= STATE_LOAD;
-                o_en <= '1';
-                next_en <= '1';
-                next_address_ram <= 0;
-                o_address <= "0000000000000000";
-            END IF;
+            --IF (start = '1') THEN--forse meglio togliere
+            -- next_state <= STATE_LOAD;
+            -- o_en <= '1';
+            -- next_en <= '1';
+            -- next_address_ram <= 0;
+            -- o_address <= "0000000000000000";
+            --END IF;
         END IF;
 
         -- START --
