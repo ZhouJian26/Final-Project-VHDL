@@ -56,20 +56,7 @@ BEGIN
         END IF;
 
     END PROCESS;
-    --PROCESS (i_clk)
-    --BEGIN
-    --IF (i_clk'event AND i_clk = '1') THEN
-    --ram_0(0) <= next_ram_0(0);
-    --ram_0(1) <= next_ram_0(1);
-    --ram_0(2) <= next_ram_0(2);
-    --ram_0(3) <= next_ram_0(3);
-    --ram_0(4) <= next_ram_0(4);
-    --ram_0(5) <= next_ram_0(5);
-    --ram_0(6) <= next_ram_0(6);
-    --ram_0(7) <= next_ram_0(7);
-    --END IF;
-    --END PROCESS;
-
+   
     PROCESS (reset, is_data_loaded, start, curr_address_ram, data, curr_done, curr_en, current_state, ram_0)
         VARIABLE target : INTEGER := 0;
     BEGIN
@@ -100,13 +87,7 @@ BEGIN
             next_state <= STATE_START;
             next_is_data_loaded <= '0';
             next_en <= '0';
-            --IF (start = '1') THEN--forse meglio togliere
-            -- next_state <= STATE_LOAD;
-            -- o_en <= '1';
-            -- next_en <= '1';
-            -- next_address_ram <= 0;
-            -- o_address <= "0000000000000000";
-            --END IF;
+            next_done<='0';
         END IF;
 
         -- START --
@@ -147,7 +128,6 @@ BEGIN
                     o_address <= "0000000000001001";
                     next_address_ram <= 0;
                     o_we <= '1';
-                    -- o_done <= '1';
                     next_done <= '1';
                     next_en <= '0';
                     o_data <= "01111111" AND data;
